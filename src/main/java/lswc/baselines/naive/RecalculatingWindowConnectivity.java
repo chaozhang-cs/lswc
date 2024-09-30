@@ -62,4 +62,9 @@ public class RecalculatingWindowConnectivity extends AbstractSlidingWindowConnec
     public long memoryConsumption() {
         return GraphLayout.parseInstance(ufts).totalSize();
     }
+
+    @Override
+    public void manage(long timeStamp) {
+
+    }
 }

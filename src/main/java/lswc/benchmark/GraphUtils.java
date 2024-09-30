@@ -156,6 +156,7 @@ public class GraphUtils {
                     }
                 }
                 streamingEdges.add(new StreamingEdge(source, target, Long.parseLong(data[2])));
+
             }
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);

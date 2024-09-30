@@ -61,4 +61,9 @@ public class OmstLctSlidingWindowConnectivity extends AbstractSlidingWindowConne
     public long memoryConsumption() {
         return lct.memoryConsumption();
     }
+
+    @Override
+    public void manage(long timeStamp) {
+
+    }
 }

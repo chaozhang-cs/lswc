@@ -1,6 +1,7 @@
 package lswc;
 
 import it.unimi.dsi.fastutil.ints.IntIntPair;
+import org.jgrapht.alg.util.Pair;
 
 import java.time.Duration;
 import java.util.Collection;
@@ -63,13 +64,14 @@ public abstract class AbstractSlidingWindowConnectivity {
                 query(workload, outputStreams);
                 startOfCurrentWindow += slide;
                 evict(startOfCurrentWindow);
+                manage(streamingEdge.timeStamp);
             }
             insert(streamingEdge);
         }
     }
 
     // test only for latency experiments
-    public void computeSlidingWindowConnectivity(Collection<StreamingEdge> inputStream, List<List<Boolean>> outputStreams, List<Long> latencyPerEdge) {
+    public void computeSlidingWindowConnectivity(Collection<StreamingEdge> inputStream, List<List<Boolean>> outputStreams, List<Pair<Long, Long>> latencyResults) {
         if (inputStream.isEmpty())
             return;
 
@@ -96,50 +98,28 @@ public abstract class AbstractSlidingWindowConnectivity {
         evict(startOfCurrentWindow); // first evict
         insert(streamingEdge);
 
-        boolean isEnd = false;
-        long start = 0, end = 0;
+        long start, end, queryTime, manageTime;
 
         while (streamingEdgeIterator.hasNext()) {
             streamingEdge = streamingEdgeIterator.next();
             if (streamingEdge.timeStamp - startOfCurrentWindow >= range) { // compute query result
-                isEnd = true;
 
                 start = System.nanoTime();
                 query(workload, outputStreams);
+                end = System.nanoTime();
+                queryTime = end - start; // query latency
+
                 startOfCurrentWindow += slide;
+
+                start = System.nanoTime();
                 evict(startOfCurrentWindow);
+                manage(streamingEdge.timeStamp);
+                end = System.nanoTime();
+                manageTime = end - start; // window manage latency
+
+                latencyResults.add(Pair.of(queryTime, manageTime));
             }
-            insert(streamingEdge);
 
-            end = System.nanoTime();
-
-            if (isEnd) {
-                latencyPerEdge.add(end - start);
-                isEnd = false;
-            }
-        }
-    }
-
-    public void computeSlidingWindowConnectivity(Queue<StreamingEdge> inputStream, List<Boolean> outputStream, int source, int target) {
-        if (inputStream.isEmpty())
-            return;
-
-        long startOfCurrentWindow = inputStream.peek().timeStamp;
-
-        while (!inputStream.isEmpty() && (inputStream.peek().timeStamp - startOfCurrentWindow) < range) // make the first window instance full
-            insert(inputStream.poll());
-
-        outputStream.add(query(source, target));    // first window instance
-        startOfCurrentWindow += slide;
-        evict(startOfCurrentWindow); // first evict
-
-        while (!inputStream.isEmpty()) {
-            StreamingEdge streamingEdge = inputStream.poll();
-            if (streamingEdge.timeStamp - startOfCurrentWindow >= range) { // compute query result
-                outputStream.add(query(source, target));
-                startOfCurrentWindow += slide;
-                evict(startOfCurrentWindow);
-            }
             insert(streamingEdge);
         }
     }
@@ -180,6 +160,7 @@ public abstract class AbstractSlidingWindowConnectivity {
                 memoryConsumptionPerWindow.add(memoryConsumption()); // capturing the memory used
 
                 evict(startOfCurrentWindow);
+                manage(streamingEdge.timeStamp);
             }
             insert(streamingEdge);
         }
@@ -195,4 +176,6 @@ public abstract class AbstractSlidingWindowConnectivity {
     public abstract void query(List<IntIntPair> queries, List<List<Boolean>> outputStreams);
 
     public abstract long memoryConsumption();
+
+    public abstract void manage(long timeStamp);
 }

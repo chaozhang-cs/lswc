@@ -61,9 +61,8 @@ public class BenchmarkRunner {
         scalabilityFixedRangeThrExpRunner();
         scalabilityFixedRangeLatencyExpRunner();
 
-//         memory consumption
+////         memory consumption
         memoryConsumptionRunner();
-
         scalabilityFixedSlideMemRunner();
         scalabilityFixedRangeMemRunner();
     }
@@ -1038,13 +1037,13 @@ public class BenchmarkRunner {
         for (Pair<Duration, Duration> pair : rangeAndSlides) {
             Duration range = pair.getFirst(), slide = pair.getSecond();
             AbstractSlidingWindowConnectivity slidingWindowConnectivity = getSwc(method, range, slide, workload, streamingEdges.get(0).timeStamp);
-            List<Long> result = new ArrayList<>();
+            List<Pair<Long, Long>> result = new ArrayList<>();
             slidingWindowConnectivity.computeSlidingWindowConnectivity(
                     streamingEdges,
                     initializeOutput(workload.size()),
                     result);
 
-            writePerWindowResult(result, BENCHMARK_RESULTS + "latency-" + exp + "-" + pair + "-" + graph + "-" + method + "-" + "workload" + workload.size() + "-" + LocalDateTime.now() + ".txt");
+            writePerWindowLatencyResult(result, BENCHMARK_RESULTS + "latency-" + exp + "-" + pair + "-" + graph + "-" + method + "-" + "workload" + workload.size() + "-" + LocalDateTime.now() + ".txt");
             System.gc();
         }
     }
@@ -1101,6 +1100,19 @@ public class BenchmarkRunner {
             fileWriter = new FileWriter(path);
             for (Long record : result)
                 fileWriter.append(record.toString()).append("\n");
+            fileWriter.flush();
+            fileWriter.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static void writePerWindowLatencyResult(List<Pair<Long,Long>> result, String path) {
+        FileWriter fileWriter;
+        try {
+            fileWriter = new FileWriter(path);
+            for (Pair<Long,Long> record : result)
+                fileWriter.append(record.getFirst().toString()).append(",").append(record.getSecond().toString()).append("\n");
             fileWriter.flush();
             fileWriter.close();
         } catch (IOException e) {

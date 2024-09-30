@@ -58,4 +58,8 @@ public class FdcSlidingWindowConnectivity extends AbstractSlidingWindowConnectiv
         return GraphLayout.parseInstance(fdc).totalSize();
     }
 
+    @Override
+    public void manage(long timeStamp) {
+    }
+
 }

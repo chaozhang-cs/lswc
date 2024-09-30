@@ -7,6 +7,7 @@ import org.openjdk.jol.info.GraphLayout;
 
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -19,6 +20,7 @@ public class BidirectionalIncrementalConnectivity extends AbstractSlidingWindowC
     private BackwardForwardBufferPair bf;
     static final int EMPTY_ROOT = -1;
     static boolean[] base;
+
 
     @Deprecated
     public BidirectionalIncrementalConnectivity(Duration range, Duration slide, long firstTimeStamp) {
@@ -57,20 +59,16 @@ public class BidirectionalIncrementalConnectivity extends AbstractSlidingWindowC
         Arrays.fill(base, true);
     }
 
-
-    // the insert operation creates new forward and backward buffers and adds them into queues
-    // the query operation will take forward and backward buffer from the queues and set up the current forward and backward buffers
     @Override
-    public void insert(StreamingEdge streamingEdge) {
+    public void manage(long timeStamp) {
         // check if the current chunk is full, if so get the next chunk and insert into the current chunk
         // insert into the current chunk
 
-        if (!currentChunk.insert(streamingEdge)) { // current chunk is full
+        if (currentChunk.chunkManagement(timeStamp)) { // current chunk is full
             // add the vertex set of the complete chunk into the backward buffer, which help prune vertices that are not inter-vertices during inserting into TaskQueue
             BackwardBuffer backwardBuffer = new BackwardBuffer(currentChunk, workload);
-//            long start = System.nanoTime();
+            // capture the latency for computing the backward buffer; only used for experimental evaluation; comment out these lines for throughput experiments
             backwardBuffer.compute();
-//            System.out.println("Backward buffer computation time: " + (System.nanoTime() - start));
 
             bf = new BackwardForwardBufferPair(backwardBuffer, new ForwardBuffer(workload));
 
@@ -78,10 +76,16 @@ public class BidirectionalIncrementalConnectivity extends AbstractSlidingWindowC
             startOfEachChunk += durationOfChunk;
             currentChunk = new Chunk(chunkSize, super.slide);
             currentChunk.setStartTime(startOfEachChunk);
-
-            // insert edge into the new chunk
-            currentChunk.insert(streamingEdge);
         }
+    }
+
+    // the insert operation creates new forward and backward buffers and adds them into queues
+    // the query operation will take forward and backward buffer from the queues and set up the current forward and backward buffers
+    @Override
+    public void insert(StreamingEdge streamingEdge) {
+        // insert edge into the current chunk
+        currentChunk.insert(streamingEdge);
+
         bf.insert(streamingEdge, windowIndexInChunk);
     }
 
@@ -122,6 +126,8 @@ public class BidirectionalIncrementalConnectivity extends AbstractSlidingWindowC
     public long memoryConsumption() {
         return GraphLayout.parseInstance(this).totalSize();
     }
+
+
 
     private static class BackwardForwardBufferPair {
         private final BackwardBuffer b;

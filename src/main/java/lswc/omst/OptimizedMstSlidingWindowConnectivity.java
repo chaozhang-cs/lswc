@@ -69,4 +69,9 @@ public class OptimizedMstSlidingWindowConnectivity extends AbstractSlidingWindow
     public long memoryConsumption() {
         return mst.memoryConsumption();
     }
+
+    @Override
+    public void manage(long timeStamp) {
+
+    }
 }

@@ -30,19 +30,33 @@ public class Chunk {
         currentElement = data.get(currentIndex);
     }
 
-    public boolean insert(StreamingEdge StreamingEdge) {
-        if (StreamingEdge.timeStamp > endOfCurrentElement) { // the current element in the chunk is full, and add the streaming edge into the next element in the chunk
+    public void insert(StreamingEdge StreamingEdge) {
+//        if (StreamingEdge.timeStamp > endOfCurrentElement) { // the current element in the chunk is full, and add the streaming edge into the next element in the chunk
+//            // assuming the timestamp is in the next element
+//            // the case that there are gaps that are larger than the interval of each element is not considered
+//            if (++currentIndex < chunkSize) { // if the current chunk is not full
+//                currentElement = data.get(currentIndex); // get the next element
+//                endOfCurrentElement += intervalOfEachElement; // update the endTimeStamp of the current element
+//            } else   // the current chunk is full
+//                return false;
+//        }
+        // adding streaming edge into the current element in the chunk
+        currentElement.add(StreamingEdge);
+    }
+
+    // check if the current chunk is full
+    // return true if the chunk is full; otherwise return false
+    public boolean chunkManagement(long timeStamp){
+        if (timeStamp > endOfCurrentElement) { // the current element in the chunk is full, and add the streaming edge into the next element in the chunk
             // assuming the timestamp is in the next element
             // the case that there are gaps that are larger than the interval of each element is not considered
             if (++currentIndex < chunkSize) { // if the current chunk is not full
                 currentElement = data.get(currentIndex); // get the next element
                 endOfCurrentElement += intervalOfEachElement; // update the endTimeStamp of the current element
             } else   // the current chunk is full
-                return false;
+                return true;
         }
-        // adding streaming edge into the current element in the chunk
-        currentElement.add(StreamingEdge);
-        return true;
+        return false;
     }
 
     public void setStartTime(long startTime) {
